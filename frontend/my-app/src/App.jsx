@@ -24,6 +24,8 @@ function App() {
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/verify-code" element={<VerifyCode />} />
 
+
+
                     {/* Rutas CON Layout (con navbar/footer) */}
                     <Route path='/' element={<Layout><Home /></Layout>} />
                     <Route path="/productos" element={<Layout><Productos /></Layout>} />
@@ -33,22 +35,22 @@ function App() {
                     <Route 
                         path="/perfil" 
                         element={
-                            <Layout>
+                            
                                 <PrivateRoute>
                                     <Perfil />
                                 </PrivateRoute>
-                            </Layout>
+                            
                         } 
                     />
 
                     <Route
                         path="/admin"
                         element={
-                            <Layout>
+                            
                                 <PrivateRoute rolRequerido="admin">
                                     <AdminPanel />
                                 </PrivateRoute>
-                            </Layout>
+                            
                         }
                     />
 
