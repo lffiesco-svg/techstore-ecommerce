@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, User, Menu, X, LogOut, UserCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -8,6 +8,8 @@ function Navbar() {
     const [usuario, setUsuario] = useState(null);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const navigate = useNavigate();
+    
+    const userMenuRef = useRef(null);  // ✅ Ref para detectar clicks fuera
 
     // Cargar usuario del localStorage
     useEffect(() => {
@@ -17,11 +19,10 @@ function Navbar() {
         }
     }, []);
 
-    // ✅ ACTUALIZAR CONTADOR DEL CARRITO
+    // Actualizar contador del carrito
     useEffect(() => {
         actualizarContador();
 
-        // ✅ Escuchar evento de actualización del carrito
         const handleCarritoActualizado = () => {
             actualizarContador();
         };
@@ -32,6 +33,23 @@ function Navbar() {
             window.removeEventListener('carritoActualizado', handleCarritoActualizado);
         };
     }, []);
+
+    // ✅ Cerrar menú al hacer click fuera
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+                setShowUserMenu(false);
+            }
+        };
+
+        if (showUserMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showUserMenu]);
 
     const actualizarContador = () => {
         const carritoGuardado = localStorage.getItem('carrito');
@@ -44,7 +62,6 @@ function Navbar() {
         }
     };
 
-    // Función para cerrar sesión
     const handleLogout = () => {
         localStorage.removeItem('usuario');
         localStorage.removeItem('token');
@@ -54,7 +71,6 @@ function Navbar() {
         navigate('/');
     };
 
-    // Función para obtener las iniciales
     const getInitials = (name, lastName) => {
         const firstInitial = name ? name.charAt(0).toUpperCase() : '';
         const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : '';
@@ -108,7 +124,7 @@ function Navbar() {
                         <Link to="/carrito" className="relative group p-2.5 hover:bg-blue-50 rounded-xl transition-all duration-300 transform hover:scale-105">
                             <ShoppingCart className="w-6 h-6 text-gray-700 group-hover:text-blue-600 transition-colors duration-300"/>
                             {cartCount > 0 && (
-                                <span className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1 shadow-lg border-2 border-white">
+                                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1 shadow-lg border-2 border-white">
                                     {cartCount}
                                 </span>
                             )}
@@ -116,7 +132,7 @@ function Navbar() {
 
                         {/* Usuario logueado o Login Icon */}
                         {usuario ? (
-                            <div className="relative">
+                            <div className="relative" ref={userMenuRef}>  {/* ✅ Ref agregado */}
                                 <button
                                     onClick={() => setShowUserMenu(!showUserMenu)}
                                     className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white font-bold text-lg flex items-center justify-center hover:shadow-lg transition-all duration-300 transform hover:scale-105"
