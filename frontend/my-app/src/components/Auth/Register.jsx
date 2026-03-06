@@ -108,6 +108,7 @@ export default function Register() {
                     onChange={handleChange}
                     placeholder="Nombre"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                    required
                 />
                 <input
                     name="apellido"
@@ -115,6 +116,7 @@ export default function Register() {
                     onChange={handleChange}
                     placeholder="Apellido"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                    required
                 />
                 </div>
 
@@ -125,6 +127,7 @@ export default function Register() {
                 onChange={handleChange}
                 placeholder="Correo electrónico"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                required
                 />
 
                 {/* Teléfono */}

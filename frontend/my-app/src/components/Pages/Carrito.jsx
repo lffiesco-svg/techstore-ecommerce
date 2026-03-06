@@ -80,66 +80,111 @@ export default function Carrito() {
     };
 
     const finalizarCompra = async (e) => {
-        e.preventDefault();
+    e.preventDefault();
 
-        if (carrito.length === 0) {
-            mostrarToast('El carrito está vacío', 'error');
-            return;
-        }
+    if (carrito.length === 0) {
+        mostrarToast('El carrito está vacío', 'error');
+        return;
+    }
 
-        if (!usuario) {
-            mostrarToast('Debes iniciar sesión para realizar una compra', 'error');
-            setTimeout(() => navigate('/login'), 2000);
-            return;
-        }
+    if (!usuario) {
+        mostrarToast('Debes iniciar sesión para realizar una compra', 'error');
+        setTimeout(() => navigate('/login'), 2000);
+        return;
+    }
 
-        const { direccion, ciudad, codigoPostal, metodoPago } = datosEnvio;
+    const { direccion, ciudad, codigoPostal, metodoPago } = datosEnvio;
 
-        if (!direccion || !ciudad || !codigoPostal) {
-            mostrarToast('Por favor completa todos los campos', 'error');
-            return;
-        }
+    if (!direccion || !ciudad || !codigoPostal) {
+        mostrarToast('Por favor completa todos los campos', 'error');
+        return;
+    }
 
-        setProcesando(true);
+    setProcesando(true);
 
-        try {
-            const promesas = carrito.map(producto => {
-                return axios.post('http://localhost:8081/api/pedidos/crear', {
-                    productId: producto.productId,
-                    nombreproducto: producto.nombre,
-                    descripcion: `Cantidad: ${producto.cantidad}`,
-                    precio: producto.precio * producto.cantidad,
-                    imagen: producto.imagen || 'https://via.placeholder.com/150',
-                    nombrecliente: `${usuario.name} ${usuario.lastName}`,
-                    telefono: usuario.tel || 'Sin teléfono',
-                    edad: 25,
-                    email: usuario.email,
-                    sexo: 'No especificado',
-                    ciudad: ciudad,
-                    codigopostal: codigoPostal,
-                    direccion: direccion,
-                    fechaentrega: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-                    metodoPago: metodoPago,
-                    estado: 'Pendiente'
-                });
+    try {
+        console.log('🛒 Paso 1: Creando pedidos...');
+        console.log('🛒 Cantidad de productos:', carrito.length);
+
+        // 1. Crear pedidos para cada producto
+        const promesas = carrito.map(producto => {
+            return axios.post('http://localhost:8081/api/pedidos/crear', {
+                productId: producto.productId,
+                nombreproducto: producto.nombre,
+                descripcion: `Cantidad: ${producto.cantidad}`,
+                precio: producto.precio * producto.cantidad,
+                imagen: producto.imagen || 'https://via.placeholder.com/150',
+                nombrecliente: `${usuario.name} ${usuario.lastName}`,
+                telefono: usuario.tel || 'Sin teléfono',
+                edad: 25,
+                email: usuario.email,
+                sexo: 'No especificado',
+                ciudad: ciudad,
+                codigopostal: codigoPostal,
+                direccion: direccion,
+                fechaentrega: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                metodoPago: metodoPago,
+                estado: 'Pendiente'
             });
+        });
 
-            await Promise.all(promesas);
+        await Promise.all(promesas);
+        console.log('✅ Paso 1 completado: Pedidos creados');
 
-            mostrarToast('¡Pedido realizado exitosamente!', 'success');
-            vaciarCarritoSilencioso();
+        console.log('📧 Paso 2: Preparando email...');
 
-            setTimeout(() => {
-                navigate('/mis-pedidos');
-            }, 2000);
+        // 2. Preparar datos para el email resumen
+        const productosParaEmail = carrito.map(prod => ({
+            nombreproducto: prod.nombre,
+            descripcion: `Cantidad: ${prod.cantidad}`,
+            precio: prod.precio * prod.cantidad,
+            imagen: prod.imagen,
+            cantidad: prod.cantidad
+        }));
 
-        } catch (error) {
-            console.error('Error al crear pedido:', error);
-            mostrarToast('Error al procesar el pedido', 'error');
-        } finally {
-            setProcesando(false);
-        }
-    };
+        console.log('📧 Productos para email:', productosParaEmail);
+
+        console.log('📧 Paso 3: Enviando email resumen...');
+
+        // 3. Enviar UN SOLO EMAIL
+        const emailResponse = await axios.post('http://localhost:8081/api/pedidos/enviar-email-resumen', {
+            productos: productosParaEmail,
+            datosCliente: {
+                nombrecliente: `${usuario.name} ${usuario.lastName}`,
+                email: usuario.email,
+                telefono: usuario.tel || 'Sin teléfono'
+            },
+            datosEnvio: {
+                direccion: direccion,
+                ciudad: ciudad,
+                codigoPostal: codigoPostal,
+                metodoPago: metodoPago
+            },
+            total: total
+        });
+
+        console.log('✅ Paso 3 completado: Email enviado', emailResponse.data);
+
+        console.log('🧹 Paso 4: Vaciando carrito...');
+
+        mostrarToast('¡Pedido realizado exitosamente!', 'success');
+        vaciarCarritoSilencioso();
+
+        console.log('✅ Paso 4 completado: Carrito vaciado');
+
+        setTimeout(() => {
+            navigate('/mis-pedidos');
+        }, 2000);
+
+    } catch (error) {
+        console.error('❌ ERROR COMPLETO:', error);
+        console.error('❌ Respuesta del servidor:', error.response?.data);
+        console.error('❌ Status:', error.response?.status);
+        mostrarToast(error.response?.data?.message || 'Error al procesar el pedido', 'error');
+    } finally {
+        setProcesando(false);
+    }
+};
 
     const mostrarToast = (texto, tipo) => {
         setMensaje({ tipo, texto });
